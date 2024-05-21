@@ -12,7 +12,7 @@ class Client:
         self.clients: list[str] | None = None
         self.p: int = 0
         self.g: int = 0
-        self.a: int = random.randint(2, 100)
+        self.a: int = random.randint(20, 100)
         self.name = name
         self.socket = socket.create_connection(('', port))
         self.shared: int = None
@@ -68,10 +68,11 @@ class Client:
                     request.content.user
                 )
                 
+            elif request.type == MessageType.UPDATE_KEY:
                 # Calculating new shared number
                 self.shared = self.g
                 for to_user in self.clients:
-                    response: Message = self._send(
+                    self._send(
                         message=Message(
                             type=MessageType.COMPUTE,
                             content=ComputeContent(
@@ -79,10 +80,17 @@ class Client:
                                 toUser=to_user,
                                 public=self.shared
                             )
-                        ),
-                        expected_type=MessageType.COMPUTED
+                        )
                     )
+                    response: Message = self._read()
+                    if response.type != MessageType.COMPUTED:
+                        raise ValueError('Must be computed, but ', response)
                     self.shared = response.content.public
                 self.shared = pow(self.shared, self.a, self.p)
                 print('I computed the follwing shared number: ', self.shared)
+                self._send(
+                    message=Message(
+                        type=MessageType.UPDATING_ENDED
+                    )
+                )
                     

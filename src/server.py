@@ -12,15 +12,14 @@ class Server:
     def _read(self, client_socket: socket.socket) -> Message | None:
         message_raw = client_socket.recv(4096)
         message_str = message_raw.decode()
-        print(message_str)
         message = Message(**json.loads(message_str))
         return message
     
-    def _send(self, message: Message, client_socket: socket.socket, receiving_type: MessageType | None = None) -> Message | None:
+    def _send(self, message: Message, client_socket: socket.socket, receiving_types: list[MessageType] | None = None) -> Message | None:
         client_socket.send(message.model_dump_json().encode())
-        if receiving_type is not None:
+        if receiving_types is not None:
             response: Message = self._read(client_socket=client_socket)
-            if response.type != receiving_type:
+            if response.type not in receiving_types:
                 raise ValueError('Status response is not OK. Received message: ', response)
             return response
     
@@ -31,6 +30,27 @@ class Server:
                     client_socket=_socket,
                     message=message
                 )
+                
+    def _recompute_shared(self) -> None:
+        for current_name, client_socket in self.clients.items():
+            print('Calculating shared for the: ', current_name)
+            self._send(
+                client_socket=client_socket,
+                message=Message(
+                    type=MessageType.UPDATE_KEY
+                )
+            )
+            
+            response = self._read(client_socket=client_socket)
+            print('Response', response)
+            while response.type != MessageType.UPDATING_ENDED:
+                self._send(
+                    message=response,
+                    client_socket=self.clients[response.content.toUser]
+                )
+                response: Message = self._read(client_socket=self.socket)
+                print(response)
+        print()
         
     def serve_client(self, client_socket: socket.socket) -> None:
         # We sending p and q along with the clients on the server
@@ -44,7 +64,7 @@ class Server:
                     clients=list(self.clients.keys())
                 )
             ),
-            receiving_type=MessageType.STATUS_OK
+            receiving_types=[MessageType.STATUS_OK]
         )
         current_user_name: str = response.content.name
         print('Accepted a new connection: ', current_user_name)
@@ -58,6 +78,9 @@ class Server:
             message=Message(type=MessageType.USER_ADDITION, content=UserAdditionContent(user=current_user_name))
         )
         
+        # Recomputing all shared keys
+        self._recompute_shared()
+        
         # Start accepting messages
         while True:
             request: Message = self._read(client_socket=client_socket)
@@ -66,12 +89,11 @@ class Server:
                 response: Message = self._send(
                     message=request,
                     client_socket=self.clients[request.content.toUser],
-                    receiving_type=MessageType.COMPUTED
+                    receiving_types=[MessageType.COMPUTED]
                 )
                 _ = self._send(
                     message=response,
-                    client_socket=client_socket,
-                    receiving_type=MessageType.STATUS_OK
+                    client_socket=client_socket
                 )
     
     def serve_forever(self) -> None:

@@ -3,16 +3,14 @@ from pydantic import BaseModel
 
 
 class MessageType(enum.IntEnum):
-    NONE: int = 0
-    INTRODUCTION: int = 1
-    INITIAL_EXCHANGE: int = 2
-    ORDINARY: int = 3
-    COMPUTE: int = 4
-    COMPUTED: int = 5
-    USER_ADDITION: int = 6 
-    USER_REMOVAL: int = 7
-    STATUS_OK: int = 8
-    UPDATE_KEY: int = 9
+    INITIAL_EXCHANGE: int = 0
+    COMPUTE: int = 1
+    COMPUTED: int = 2
+    USER_ADDITION: int = 3
+    STATUS_OK: int = 4
+    UPDATE_KEY: int = 5
+    UPDATING_ENDED: int = 6
+
 
 class UserAdditionContent(BaseModel):
     user: str

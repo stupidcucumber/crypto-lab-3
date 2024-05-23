@@ -5,5 +5,6 @@ from .message import (
     OrdinaryContent,
     ComputeContent,
     InitialExchangeContent,
-    UserAdditionContent
+    ClientsChangedContent,
+    UpdateKeyContent
 )

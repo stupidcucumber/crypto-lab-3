@@ -3,7 +3,8 @@ from .model import (
     Message,
     MessageType,
     IntroductionContent,
-    ComputeContent
+    ComputeContent,
+    UpdateKeyContent
 )
 
 
@@ -31,6 +32,51 @@ class Client:
         message_raw = self.socket.recv(4096).decode()
         return Message(**json.loads(message_raw))
     
+    def my_index(self) -> int:
+        for index, c_name in enumerate(self.clients):
+            if c_name == self.name:
+                return index
+        return -1
+    
+    def calculate_shared(self) -> int:
+        shared = self.g
+        for to_user in self.clients:
+            if to_user == self.name:
+                continue
+            print(f'{self.name} sending number to compute to {to_user}')
+            self._send(
+                message=Message(
+                    type=MessageType.COMPUTE,
+                    content=ComputeContent(
+                        fromUser=self.name,
+                        toUser=to_user,
+                        public=shared
+                    )
+                )
+            )
+            print(f'Waiting for the response from {to_user}')
+            response: Message = self._read()
+            print(f'Received response from the {to_user}')
+            if response.type != MessageType.COMPUTED:
+                raise ValueError('Must be computed, but ', response)
+            shared = response.content.public
+        shared = pow(shared, self.a, self.p)
+        print('Calculated the following shared number: ', shared)
+        my_index = self.my_index()
+        if my_index >= len(self.clients) - 1:
+            return shared
+        else:
+            self._send(
+                message=Message(
+                    type=MessageType.UPDATE_KEY,
+                    content=UpdateKeyContent(
+                        fromUser=self.name,
+                        toUser=self.clients[my_index + 1]
+                    )
+                )
+            )
+        return shared
+    
     def communicate_forever(self) -> None:
         # Accept initial message from the server
         initial_request: Message = self._read()
@@ -38,11 +84,10 @@ class Client:
             raise ValueError('Expected INITIAL_EXCHANGE message type, but got: ', initial_request)
         self.p = initial_request.content.p
         self.g = initial_request.content.g
-        self.clients = initial_request.content.clients
         self._send(
             message=Message(
                 type=MessageType.STATUS_OK,
-                content=IntroductionContent(name=self.name)
+                content=IntroductionContent(client=self.name)
             )
         )
         
@@ -51,7 +96,6 @@ class Client:
             request: Message = self._read()
 
             if request.type == MessageType.COMPUTE:
-                print('Received the response', request)
                 self._send(
                     message=Message(
                         type=MessageType.COMPUTED,
@@ -62,47 +106,12 @@ class Client:
                         )
                     )
                 )
-                
-            elif request.type == MessageType.COMPUTED:
-                self._send(
-                    message=request
-                )
 
-            elif request.type == MessageType.USER_ADDITION:
-                # Adding new user to active clients
-                self.clients.append(
-                    request.content.user
-                )
+            elif request.type == MessageType.CLIENTS_CHANGED:
+                self.clients = request.content.clients
+                if self.clients[0] != self.name:
+                    continue
+                self.shared = self.calculate_shared()
 
             elif request.type == MessageType.UPDATE_KEY:
-                # Calculating new shared number
-                self.shared = self.g
-                for to_user in self.clients:
-                    print(f'{self.name} sending number to compute to {to_user}')
-                    self._send(
-                        message=Message(
-                            type=MessageType.COMPUTE,
-                            content=ComputeContent(
-                                fromUser=self.name,
-                                toUser=to_user,
-                                public=self.shared
-                            )
-                        )
-                    )
-                    print(f'Waiting for the response from {to_user}')
-                    response: Message = self._read()
-                    print(f'Received response from the {to_user}')
-                    if response.type != MessageType.COMPUTED:
-                        raise ValueError('Must be computed, but ', response)
-                    self.shared = response.content.public
-                self.shared = pow(self.shared, self.a, self.p)
-                print('I computed the follwing shared number: ', self.shared)
-                self._send(
-                    message=Message(
-                        type=MessageType.UPDATING_ENDED,
-                        content=IntroductionContent(
-                            name=self.name
-                        )
-                    )
-                )
-                print('Sended updating ended!')
+                self.shared = self.calculate_shared()

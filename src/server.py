@@ -26,6 +26,18 @@ class Server:
                 client_socket=client_socket,
                 message=message
             )
+            
+    def _notificate_clients_changed(self) -> None:
+        self._notificate_all(
+            message=Message(
+                type=MessageType.CLIENTS_CHANGED, 
+                content=ClientsChangedContent(
+                    p=self.p,
+                    g=self.g,
+                    clients=self.clients
+                )
+            )
+        )
         
     def serve_client(self, client_socket: socket.socket) -> None:
         # We sending p and q along with the clients on the server
@@ -48,16 +60,7 @@ class Server:
         self.clients.append(current_user_name)
         
         # Notificating other users about new user
-        self._notificate_all(
-            message=Message(
-                type=MessageType.CLIENTS_CHANGED, 
-                content=ClientsChangedContent(
-                    p=self.p,
-                    g=self.g,
-                    clients=self.clients
-                )
-            )
-        )
+        self._notificate_clients_changed()
         
         # Start accepting messages
         while True:
@@ -81,6 +84,16 @@ class Server:
                     message=request,
                     client_socket=self.clients_sockets[request.content.toUser]
                 )
+                
+            elif request.type == MessageType.DISCONNECT:
+                self.clients = [client for client in self.clients if client != current_user_name]
+                self.clients_sockets.pop(current_user_name)
+                self._notificate_clients_changed()
+                print('User removed: ', current_user_name)
+                return
+            
+            else: 
+                print('Unrecognizable type: ', request.type)
     
     def serve_forever(self) -> None:
         while True:

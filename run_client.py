@@ -18,4 +18,4 @@ def parse_arguments() -> argparse.Namespace:
 if __name__ == '__main__':
     args = parse_arguments()
     client = Client(name=args.name, port=args.port)
-    client.communicate_forever()
+    client.try_commucate_forever()

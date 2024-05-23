@@ -32,6 +32,13 @@ class Client:
         message_raw = self.socket.recv(4096).decode()
         return Message(**json.loads(message_raw))
     
+    def _send_disconnect(self) -> None:
+        self._send(
+            message=Message(
+                type=MessageType.DISCONNECT
+            )
+        )
+    
     def my_index(self) -> int:
         for index, c_name in enumerate(self.clients):
             if c_name == self.name:
@@ -113,3 +120,13 @@ class Client:
 
             elif request.type == MessageType.UPDATE_KEY:
                 self.shared = self.calculate_shared()
+
+    def try_commucate_forever(self) -> None:
+        try:
+            self.communicate_forever()
+        except KeyboardInterrupt as e:
+            print('Disconnecting from the server.')
+            self._send_disconnect()
+        except:
+            print('Server is down.')
+            

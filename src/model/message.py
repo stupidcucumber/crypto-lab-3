@@ -14,6 +14,7 @@ class MessageType(enum.IntEnum):
 
 class OrdinaryMessageContent(BaseModel):
     fromUser: str
+    messageHash: str
     message: str
 
 class ClientsChangedContent(BaseModel):

@@ -9,7 +9,7 @@ def parse_arguments() -> argparse.Namespace:
         help='Port on which server will be listening.'
     )
     parser.add_argument(
-        '--nbits', type=int, default=512,
+        '--nbits', type=int, default=128,
         help='The length of the primary number in the binary form.'
     )
     return parser.parse_args()

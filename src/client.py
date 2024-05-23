@@ -7,7 +7,7 @@ from .model import (
     UpdateKeyContent,
     OrdinaryMessageContent
 )
-from .utils import encrypt_aes, decrypt_aes
+from .utils import encrypt_aes, decrypt_aes, generate_hmac
 
 
 class Client:
@@ -119,6 +119,9 @@ class Client:
                 
             elif request.type == MessageType.BROADCAST_MESSAGE:
                 message = decrypt_aes(key=self.shared, ciphertext=request.content.message.encode())
+                predictedMessageHash = generate_hmac(key=self.shared, message=message)
+                if predictedMessageHash != request.content.messageHash:
+                    print('Alarm! Message is not good.')
                 print('%s >  %s' % (request.content.fromUser, message))
 
             elif request.type == MessageType.CLIENTS_CHANGED:
@@ -139,6 +142,7 @@ class Client:
                     type=MessageType.BROADCAST_MESSAGE,
                     content=OrdinaryMessageContent(
                         fromUser=self.name,
+                        messageHash=generate_hmac(key=self.shared, message=message),
                         message=base64.b64encode(encoded_message).decode()
                     )
                 )

@@ -7,9 +7,14 @@ class MessageType(enum.IntEnum):
     COMPUTE: int = 1
     COMPUTED: int = 2
     CLIENTS_CHANGED: int = 3
-    STATUS_OK: int = 4
-    UPDATE_KEY: int = 5
-    UPDATING_ENDED: int = 6
+    UPDATE_KEY: int = 4
+    MESSAGE: int = 5
+    DISCONNECT: int = 6
+    
+
+class OrdinaryMessageContent(BaseModel):
+    fromUser: str
+    message: str
 
 
 class ClientsChangedContent(BaseModel):

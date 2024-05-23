@@ -1,4 +1,4 @@
-import socket, json, random, time
+import socket, json, random
 from .model import (
     Message,
     MessageType,
@@ -43,7 +43,6 @@ class Client:
         for to_user in self.clients:
             if to_user == self.name:
                 continue
-            print(f'{self.name} sending number to compute to {to_user}')
             self._send(
                 message=Message(
                     type=MessageType.COMPUTE,
@@ -54,9 +53,7 @@ class Client:
                     )
                 )
             )
-            print(f'Waiting for the response from {to_user}')
             response: Message = self._read()
-            print(f'Received response from the {to_user}')
             if response.type != MessageType.COMPUTED:
                 raise ValueError('Must be computed, but ', response)
             shared = response.content.public
@@ -86,7 +83,7 @@ class Client:
         self.g = initial_request.content.g
         self._send(
             message=Message(
-                type=MessageType.STATUS_OK,
+                type=MessageType.INITIAL_EXCHANGE,
                 content=IntroductionContent(client=self.name)
             )
         )
@@ -94,6 +91,7 @@ class Client:
         # Accepting requests from the server
         while True:
             request: Message = self._read()
+            print(request)
 
             if request.type == MessageType.COMPUTE:
                 self._send(

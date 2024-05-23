@@ -17,13 +17,8 @@ class Server:
         message = Message(**json.loads(message_str))
         return message
     
-    def _send(self, message: Message, client_socket: socket.socket, receiving_types: list[MessageType] | None = None) -> Message | None:
+    def _send(self, message: Message, client_socket: socket.socket) -> Message | None:
         client_socket.send(message.model_dump_json().encode())
-        if receiving_types is not None:
-            response: Message = self._read(client_socket=client_socket)
-            if response.type not in receiving_types:
-                raise ValueError('Status response is not OK. Received message: ', response)
-            return response
     
     def _notificate_all(self, message: Message) -> None:
         for client_socket in self.clients_sockets.values():
@@ -34,7 +29,7 @@ class Server:
         
     def serve_client(self, client_socket: socket.socket) -> None:
         # We sending p and q along with the clients on the server
-        response: Message = self._send(
+        self._send(
             client_socket=client_socket,
             message=Message(
                 type=MessageType.INITIAL_EXCHANGE,
@@ -42,9 +37,9 @@ class Server:
                     p=self.p,
                     g=self.g
                 )
-            ),
-            receiving_types=[MessageType.STATUS_OK]
+            )
         )
+        response: Message = self._read(client_socket=client_socket)
         current_user_name: str = response.content.client
         print('Accepted a new connection: ', current_user_name)
         

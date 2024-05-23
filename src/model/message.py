@@ -8,7 +8,7 @@ class MessageType(enum.IntEnum):
     COMPUTED: int = 2
     CLIENTS_CHANGED: int = 3
     UPDATE_KEY: int = 4
-    MESSAGE: int = 5
+    BROADCAST_MESSAGE: int = 5
     DISCONNECT: int = 6
     
 
@@ -16,6 +16,10 @@ class OrdinaryMessageContent(BaseModel):
     fromUser: str
     message: str
 
+    def print(self) -> None:
+        print(
+            '%s> %s' % (self.fromUser, self.message)
+        )
 
 class ClientsChangedContent(BaseModel):
     p: int
@@ -32,11 +36,6 @@ class IntroductionContent(BaseModel):
     client: str
     
     
-class OrdinaryContent(BaseModel):
-    fromUser: str
-    message: bytes
-    
-    
 class UpdateKeyContent(BaseModel):
     fromUser: str
     toUser: str
@@ -50,4 +49,4 @@ class ComputeContent(BaseModel):
     
 class Message(BaseModel):
     type: MessageType
-    content: ClientsChangedContent | InitialExchangeContent | IntroductionContent | OrdinaryContent | ComputeContent | UpdateKeyContent | None = None
+    content: ClientsChangedContent | InitialExchangeContent | IntroductionContent | OrdinaryMessageContent | ComputeContent | UpdateKeyContent | None = None

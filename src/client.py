@@ -4,13 +4,15 @@ from .model import (
     MessageType,
     IntroductionContent,
     ComputeContent,
-    UpdateKeyContent
+    UpdateKeyContent,
+    OrdinaryMessageContent
 )
 
 
 class Client:
-    def __init__(self, name: str, port: int) -> None:
+    def __init__(self, name: str, port: int, logs: bool = True) -> None:
         self.clients: list[str] | None = None
+        self.logs = logs
         self.p: int = 0
         self.g: int = 0
         self.a: int = random.randint(20, 100)
@@ -65,7 +67,8 @@ class Client:
                 raise ValueError('Must be computed, but ', response)
             shared = response.content.public
         shared = pow(shared, self.a, self.p)
-        print('Calculated the following shared number: ', shared)
+        if self.logs:
+            print('Calculated the following shared number: ', shared)
         my_index = self.my_index()
         if my_index >= len(self.clients) - 1:
             return shared
@@ -98,7 +101,8 @@ class Client:
         # Accepting requests from the server
         while True:
             request: Message = self._read()
-            print(request)
+            if self.logs:
+                print(request)
 
             if request.type == MessageType.COMPUTE:
                 self._send(
@@ -111,6 +115,9 @@ class Client:
                         )
                     )
                 )
+                
+            elif request.type == MessageType.BROADCAST_MESSAGE:
+                request.content.print()
 
             elif request.type == MessageType.CLIENTS_CHANGED:
                 self.clients = request.content.clients
@@ -120,6 +127,28 @@ class Client:
 
             elif request.type == MessageType.UPDATE_KEY:
                 self.shared = self.calculate_shared()
+                
+    def send_message_forever(self) -> None:
+        while True:
+            message: str = input()
+            
+            self._send(
+                message=Message(
+                    type=MessageType.BROADCAST_MESSAGE,
+                    content=OrdinaryMessageContent(
+                        fromUser=self.name,
+                        message=message
+                    )
+                )
+            )
+            
+    def try_send_message_forever(self) -> None:
+        try:
+            self.send_message_forever()
+        except KeyboardInterrupt as e:
+            pass
+        except:
+            pass
 
     def try_commucate_forever(self) -> None:
         try:

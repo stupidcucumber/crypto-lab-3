@@ -2,7 +2,7 @@ from .message import (
     Message,
     MessageType,
     IntroductionContent,
-    OrdinaryContent,
+    OrdinaryMessageContent,
     ComputeContent,
     InitialExchangeContent,
     ClientsChangedContent,

@@ -20,8 +20,10 @@ class Server:
     def _send(self, message: Message, client_socket: socket.socket) -> Message | None:
         client_socket.send(message.model_dump_json().encode())
     
-    def _notificate_all(self, message: Message) -> None:
-        for client_socket in self.clients_sockets.values():
+    def _notificate_all(self, message: Message, exception: list[str] | None = None) -> None:
+        for client_name, client_socket in self.clients_sockets.items():
+            if exception and client_name in exception:
+                continue
             self._send(
                 client_socket=client_socket,
                 message=message
@@ -91,6 +93,12 @@ class Server:
                 self._notificate_clients_changed()
                 print('User removed: ', current_user_name)
                 return
+            
+            elif request.type == MessageType.BROADCAST_MESSAGE:
+                self._notificate_all(
+                    message=request,
+                    exception=[request.content.fromUser]
+                )
             
             else: 
                 print('Unrecognizable type: ', request.type)

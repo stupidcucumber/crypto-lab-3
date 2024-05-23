@@ -1,4 +1,4 @@
-import socket, json, random
+import socket, json, random, base64
 from .model import (
     Message,
     MessageType,
@@ -7,6 +7,7 @@ from .model import (
     UpdateKeyContent,
     OrdinaryMessageContent
 )
+from .utils import encrypt_aes, decrypt_aes
 
 
 class Client:
@@ -15,7 +16,7 @@ class Client:
         self.logs = logs
         self.p: int = 0
         self.g: int = 0
-        self.a: int = random.randint(20, 100)
+        self.a: int = random.randint(2, 1000000)
         self.name = name
         self.socket = socket.create_connection(('', port))
         self.shared: int = None
@@ -66,7 +67,7 @@ class Client:
             if response.type != MessageType.COMPUTED:
                 raise ValueError('Must be computed, but ', response)
             shared = response.content.public
-        shared = pow(shared, self.a, self.p)
+        shared = pow(shared, self.a, self.p).to_bytes(length=(shared.bit_length() + 7) // 8, byteorder='little')
         if self.logs:
             print('Calculated the following shared number: ', shared)
         my_index = self.my_index()
@@ -117,7 +118,10 @@ class Client:
                 )
                 
             elif request.type == MessageType.BROADCAST_MESSAGE:
-                request.content.print()
+                print('Before dec')
+                message = decrypt_aes(key=self.shared, ciphertext=request.content.message.encode())
+                print('After dec')
+                print('%s >  %s' % (request.content.fromUser, message))
 
             elif request.type == MessageType.CLIENTS_CHANGED:
                 self.clients = request.content.clients
@@ -131,13 +135,15 @@ class Client:
     def send_message_forever(self) -> None:
         while True:
             message: str = input()
-            
+            print('Before enc')
+            encoded_message = encrypt_aes(self.shared, plaintext=message)
+            print('After enc')
             self._send(
                 message=Message(
                     type=MessageType.BROADCAST_MESSAGE,
                     content=OrdinaryMessageContent(
                         fromUser=self.name,
-                        message=message
+                        message=base64.b64encode(encoded_message).decode()
                     )
                 )
             )
@@ -156,6 +162,6 @@ class Client:
         except KeyboardInterrupt as e:
             print('Disconnecting from the server.')
             self._send_disconnect()
-        except:
-            print('Server is down.')
+        except Exception as e:
+            print('Server is down.', e)
             

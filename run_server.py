@@ -9,12 +9,8 @@ def parse_arguments() -> argparse.Namespace:
         help='Port on which server will be listening.'
     )
     parser.add_argument(
-        '-p', type=int, required=True,
-        help='Primary number p.'
-    )
-    parser.add_argument(
-        '-g', type=int, required=True,
-        help='Primary number g.'
+        '--nbits', type=int, default=512,
+        help='The length of the primary number in the binary form.'
     )
     return parser.parse_args()
 
@@ -22,6 +18,6 @@ def parse_arguments() -> argparse.Namespace:
 if __name__ == '__main__':
     args = parse_arguments()
     server = Server(
-        port=args.port, p=args.p, g=args.g
+        port=args.port, n_bits=args.nbits
     )
     server.serve_forever()

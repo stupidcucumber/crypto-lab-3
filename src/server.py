@@ -1,15 +1,16 @@
 import socket, threading, json
 from .model import Message, MessageType, InitialExchangeContent, ClientsChangedContent
+from Crypto.Util import number
 
 
 class Server:
-    def __init__(self, port: int, p: int = 23, g: int = 11) -> None:
+    def __init__(self, port: int, n_bits: int) -> None:
         self.socket: socket.socket = socket.create_server(('', port))
         self.clients_sockets: dict[str, socket.socket] = dict()
         self.clients: list[str] = []
         self.locks: dict[str, threading.Lock] = dict()
-        self.p: int = p
-        self.g: int = g
+        self.p: int = number.getPrime(n_bits)
+        self.g: int = number.getPrime(n_bits)
         
     def _read(self, client_socket: socket.socket) -> Message | None:
         message_raw = client_socket.recv(4096)

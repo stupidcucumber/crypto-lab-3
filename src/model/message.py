@@ -16,11 +16,6 @@ class OrdinaryMessageContent(BaseModel):
     fromUser: str
     message: str
 
-    def print(self) -> None:
-        print(
-            '%s> %s' % (self.fromUser, self.message)
-        )
-
 class ClientsChangedContent(BaseModel):
     p: int
     g: int

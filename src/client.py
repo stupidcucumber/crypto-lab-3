@@ -49,8 +49,9 @@ class Client:
         # Accepting requests from the server
         while True:
             request: Message = self._read()
-            
+
             if request.type == MessageType.COMPUTE:
+                print('Received the response', request)
                 self._send(
                     message=Message(
                         type=MessageType.COMPUTED,
@@ -62,16 +63,22 @@ class Client:
                     )
                 )
                 
+            elif request.type == MessageType.COMPUTED:
+                self._send(
+                    message=request
+                )
+
             elif request.type == MessageType.USER_ADDITION:
                 # Adding new user to active clients
                 self.clients.append(
                     request.content.user
                 )
-                
+
             elif request.type == MessageType.UPDATE_KEY:
                 # Calculating new shared number
                 self.shared = self.g
                 for to_user in self.clients:
+                    print(f'{self.name} sending number to compute to {to_user}')
                     self._send(
                         message=Message(
                             type=MessageType.COMPUTE,
@@ -82,7 +89,9 @@ class Client:
                             )
                         )
                     )
+                    print(f'Waiting for the response from {to_user}')
                     response: Message = self._read()
+                    print(f'Received response from the {to_user}')
                     if response.type != MessageType.COMPUTED:
                         raise ValueError('Must be computed, but ', response)
                     self.shared = response.content.public
@@ -90,7 +99,10 @@ class Client:
                 print('I computed the follwing shared number: ', self.shared)
                 self._send(
                     message=Message(
-                        type=MessageType.UPDATING_ENDED
+                        type=MessageType.UPDATING_ENDED,
+                        content=IntroductionContent(
+                            name=self.name
+                        )
                     )
                 )
-                    
+                print('Sended updating ended!')

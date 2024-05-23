@@ -118,9 +118,7 @@ class Client:
                 )
                 
             elif request.type == MessageType.BROADCAST_MESSAGE:
-                print('Before dec')
                 message = decrypt_aes(key=self.shared, ciphertext=request.content.message.encode())
-                print('After dec')
                 print('%s >  %s' % (request.content.fromUser, message))
 
             elif request.type == MessageType.CLIENTS_CHANGED:
@@ -135,9 +133,7 @@ class Client:
     def send_message_forever(self) -> None:
         while True:
             message: str = input()
-            print('Before enc')
             encoded_message = encrypt_aes(self.shared, plaintext=message)
-            print('After enc')
             self._send(
                 message=Message(
                     type=MessageType.BROADCAST_MESSAGE,
